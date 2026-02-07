@@ -3,16 +3,12 @@ using _101clup.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =====================
-// Services
-// =====================
-
 // Controllers & Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS (Frontend serbest)
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -22,12 +18,24 @@ builder.Services.AddCors(options =>
 });
 
 // =====================
-// PostgreSQL (Render Native)
+// PostgreSQL (Render FIX)
 // =====================
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-if (string.IsNullOrWhiteSpace(connectionString))
+if (string.IsNullOrWhiteSpace(databaseUrl))
     throw new Exception("DATABASE_URL not found");
+
+// 🔥 URI → NPGSQL FORMAT
+var uri = new Uri(databaseUrl);
+var userInfo = uri.UserInfo.Split(':');
+
+var connectionString =
+    $"Host={uri.Host};" +
+    $"Port={uri.Port};" +
+    $"Database={uri.AbsolutePath.TrimStart('/')};" +
+    $"Username={userInfo[0]};" +
+    $"Password={userInfo[1]};" +
+    $"SSL Mode=Require;Trust Server Certificate=true";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -39,24 +47,22 @@ var app = builder.Build();
 // =====================
 // Middleware
 // =====================
-
 app.UseSwagger();
 app.UseSwaggerUI();
-
 app.UseCors("AllowAll");
 
-// Admin Key Middleware
+// Admin Key
 app.Use(async (ctx, next) =>
 {
     if (ctx.Request.Path.StartsWithSegments("/api/menu") &&
         ctx.Request.Method != HttpMethods.Get)
     {
-        var expectedKey = Environment.GetEnvironmentVariable("ADMIN_KEY") ?? "101clup";
-        var providedKey = ctx.Request.Headers["X-Admin-Key"].ToString();
+        var expected = Environment.GetEnvironmentVariable("ADMIN_KEY") ?? "101clup";
+        var provided = ctx.Request.Headers["X-Admin-Key"].ToString();
 
-        if (providedKey != expectedKey)
+        if (provided != expected)
         {
-            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            ctx.Response.StatusCode = 401;
             await ctx.Response.WriteAsync("Unauthorized");
             return;
         }
@@ -68,8 +74,7 @@ app.Use(async (ctx, next) =>
 app.MapControllers();
 
 // =====================
-// Database Migration
-// (Sadece APPLY – ASLA DROP ETMEZ)
+// MIGRATION (SAFE)
 // =====================
 using (var scope = app.Services.CreateScope())
 {

@@ -18,20 +18,22 @@ builder.Services.AddCors(options =>
 });
 
 // =====================
-// PostgreSQL (Render FIX)
+// PostgreSQL (Render SAFE)
 // =====================
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 if (string.IsNullOrWhiteSpace(databaseUrl))
     throw new Exception("DATABASE_URL not found");
 
-// 🔥 URI → NPGSQL FORMAT
 var uri = new Uri(databaseUrl);
 var userInfo = uri.UserInfo.Split(':');
 
+// 🔥 PORT FIX
+var port = uri.Port > 0 ? uri.Port : 5432;
+
 var connectionString =
     $"Host={uri.Host};" +
-    $"Port={uri.Port};" +
+    $"Port={port};" +
     $"Database={uri.AbsolutePath.TrimStart('/')};" +
     $"Username={userInfo[0]};" +
     $"Password={userInfo[1]};" +

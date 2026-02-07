@@ -1,0 +1,6 @@
+@_101clup.Api_HostAddress = http://localhost:5218
+
+GET {{_101clup.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

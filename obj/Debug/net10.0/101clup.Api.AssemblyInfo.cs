@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("101clup.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d7b9e9ee36ed72e0afdbb576cc8f5d0df23e8b7")]
 [assembly: System.Reflection.AssemblyProductAttribute("101clup.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("101clup.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

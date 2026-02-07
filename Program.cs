@@ -1,65 +1,71 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
+using _101clup.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
+
+// Controllers & Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// DATABASE
-var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", p =>
+        p.AllowAnyOrigin()
+         .AllowAnyHeader()
+         .AllowAnyMethod());
+});
 
-if (string.IsNullOrWhiteSpace(databaseUrl))
-    throw new Exception("DATABASE_URL not set");
+// PostgreSQL (SADECE POSTGRES)
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 
-// Render postgres:// → Npgsql formatına çevir
-var uri = new Uri(databaseUrl);
-var userInfo = uri.UserInfo.Split(':');
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new Exception("DATABASE_URL not found");
 
-var connectionString =
-    $"Host={uri.Host};" +
-    $"Port={uri.Port};" +
-    $"Database={uri.AbsolutePath.TrimStart('/')};" +
-    $"Username={userInfo[0]};" +
-    $"Password={userInfo[1]};" +
-    $"SSL Mode=Require;Trust Server Certificate=true";
+if (connectionString.StartsWith("postgres://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    connectionString =
+        $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};" +
+        $"Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseNpgsql(connectionString));
 
 var app = builder.Build();
 
-// Swagger
+// Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseRouting();
+app.UseCors("AllowAll");
 
 // Admin Key middleware
 app.Use(async (ctx, next) =>
 {
     if (ctx.Request.Path.StartsWithSegments("/api/menu") &&
-        HttpMethods.IsPost(ctx.Request.Method))
+        ctx.Request.Method != HttpMethods.Get)
     {
-        var adminKey = Environment.GetEnvironmentVariable("ADMIN_KEY") ?? "";
+        var expected = Environment.GetEnvironmentVariable("ADMIN_KEY") ?? "101clup";
         var provided = ctx.Request.Headers["X-Admin-Key"].ToString();
 
-        if (provided != adminKey)
+        if (provided != expected)
         {
             ctx.Response.StatusCode = 401;
             await ctx.Response.WriteAsync("Unauthorized");
             return;
         }
     }
-
     await next();
 });
 
 app.MapControllers();
 
-// 🔥 BURASI ÖNEMLİ: SADECE MIGRATE
+// MIGRATION (SADECE CREATE / UPDATE – ASLA SİLMEZ)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

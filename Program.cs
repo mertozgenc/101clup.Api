@@ -3,7 +3,6 @@ using _101clup.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 // Controllers & Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -18,24 +17,15 @@ builder.Services.AddCors(options =>
          .AllowAnyMethod());
 });
 
-// PostgreSQL (SADECE POSTGRES)
+// 🔥 POSTGRES (RENDER UYUMLU – DOKUNMA)
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new Exception("DATABASE_URL not found");
 
-if (connectionString.StartsWith("postgres://"))
-{
-    var uri = new Uri(connectionString);
-    var userInfo = uri.UserInfo.Split(':');
-
-    connectionString =
-        $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};" +
-        $"Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-}
-
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(connectionString));
+// ⛔ HİÇ PARSE ETME
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 var app = builder.Build();
 
@@ -44,7 +34,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowAll");
 
-// Admin Key middleware
+// Admin Key Middleware
 app.Use(async (ctx, next) =>
 {
     if (ctx.Request.Path.StartsWithSegments("/api/menu") &&
@@ -60,12 +50,13 @@ app.Use(async (ctx, next) =>
             return;
         }
     }
+
     await next();
 });
 
 app.MapControllers();
 
-// MIGRATION (SADECE CREATE / UPDATE – ASLA SİLMEZ)
+// ✅ MIGRATION – SADECE APPLY
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

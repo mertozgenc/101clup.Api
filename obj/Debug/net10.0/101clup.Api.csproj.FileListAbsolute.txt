@@ -123,3 +123,4 @@ C:\Users\merto\101clup.Api\obj\Debug\net10.0\refint\101clup.Api.dll
 C:\Users\merto\101clup.Api\obj\Debug\net10.0\101clup.Api.pdb
 C:\Users\merto\101clup.Api\obj\Debug\net10.0\101clup.Api.genruntimeconfig.cache
 C:\Users\merto\101clup.Api\obj\Debug\net10.0\ref\101clup.Api.dll
+C:\Users\merto\101clup.Api\obj\Debug\net10.0\101clup.Api.sourcelink.json
